@@ -1,3 +1,4 @@
+# Worker fleet: GitHub Actions, not Vercel cron (Hobby cron is once/day).
 name: sweep
 on:
   schedule:
