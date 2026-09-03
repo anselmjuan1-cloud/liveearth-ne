@@ -76,9 +76,15 @@ async function main() {
   // Cameras are normally immortal, but the app is live-video-only and the merge
   // above would otherwise preserve still-image cameras ingested before that rule
   // existed. Anything with no playable stream is dropped from the registry.
-  const merged = [...known.values()];
+  // Strip non-video sources as well as non-video cameras: a camera carried over
+  // from a now-disabled provider keeps whatever sources it was ingested with,
+  // so filtering cameras alone leaves still-image URLs in the registry.
+  const merged = [...known.values()].map((c) => ({
+    ...c,
+    sources: c.sources.filter((s) => s.kind === "hls")
+  }));
   const cameras = merged
-    .filter((c) => c.sources.some((s) => s.kind === "hls"))
+    .filter((c) => c.sources.length > 0)
     .sort((a, b) => a.id.localeCompare(b.id));
 
   const pruned = merged.length - cameras.length;
