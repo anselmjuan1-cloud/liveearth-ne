@@ -18,6 +18,31 @@ if [ ! -d _data/.git ]; then
 fi
 
 cp _out/*.json _data/
+
+# Vercel reads vercel.json from the branch that was pushed, not from the default
+# branch -- so the git.deploymentEnabled rule on master does not apply here and
+# every data commit would otherwise spawn a failing preview build against the
+# Hobby plan's 100/day limit. Ship the opt-out on the data branch itself.
+cat > _data/vercel.json <<'JSON'
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": { "deploymentEnabled": { "data": false } },
+  "ignoreCommand": "exit 0"
+}
+JSON
+
+cat > _data/README.md <<'MD'
+# data branch
+
+Machine-written state for [liveearth-ne](https://github.com/anselmjuan1-cloud/liveearth-ne).
+Do not edit by hand -- GitHub Actions overwrites this branch.
+
+- `registry.json` -- every known camera. Cameras are places and are never deleted.
+- `health.json` -- current health state per camera, plus the sweep counter.
+
+Deployments are disabled for this branch; see `vercel.json`.
+MD
+
 git -C _data config user.name "liveearth-bot"
 git -C _data config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git -C _data add -A
