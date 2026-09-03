@@ -1,0 +1,39 @@
+name: sweep
+on:
+  schedule:
+    # Every 10 minutes. GitHub delays scheduled runs under load, which is fine:
+    # the sweep counter is monotonic, not wall-clock dependent.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-branch
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Fetch prior state
+        run: bash scripts/fetch-data.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Probe cameras
+        run: npm run sweep
+        env:
+          SWEEP_BUDGET: "700"
+          SWEEP_CONCURRENCY: "24"
+      - name: Publish
+        run: bash scripts/publish-data.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
