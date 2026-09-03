@@ -29,7 +29,7 @@ export default async function EventsPage() {
           <b>{liveCount.toLocaleString()}</b> passing health checks
         </span>
         <span>
-          <b>{videoCount.toLocaleString()}</b> with live video
+          <b>{videoCount.toLocaleString()}</b> live video streams
         </span>
         <span>
           <b>{routed.length}</b> active events

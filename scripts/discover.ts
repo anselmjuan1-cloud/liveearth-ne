@@ -73,7 +73,17 @@ async function main() {
     }
   }
 
-  const cameras = [...known.values()].sort((a, b) => a.id.localeCompare(b.id));
+  // Cameras are normally immortal, but the app is live-video-only and the merge
+  // above would otherwise preserve still-image cameras ingested before that rule
+  // existed. Anything with no playable stream is dropped from the registry.
+  const merged = [...known.values()];
+  const cameras = merged
+    .filter((c) => c.sources.some((s) => s.kind === "hls"))
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  const pruned = merged.length - cameras.length;
+  if (pruned > 0) console.log(`pruned ${pruned} cameras with no live video`);
+
   if (cameras.length === 0) {
     console.error("refusing to write an empty registry");
     process.exit(1);

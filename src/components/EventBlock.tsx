@@ -50,7 +50,7 @@ export default function EventBlock({ event }: { event: RoutedEvent }) {
       </div>
 
       <div className="hero">
-        <CameraTile camera={hero} live onDead={markDead} />
+        <CameraTile camera={hero} priority onDead={markDead} />
         <div className="hero-side">
           {rest.slice(0, 2).map((c) => (
             <CameraTile key={c.id} camera={c} onDead={markDead} />

@@ -19,9 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </header>
           {children}
           <footer className="note">
-            Cameras published by NYSDOT, PennDOT, CTDOT and the New England 511
-            consortium. Events from USGS and the National Weather Service. All sources
-            are public and keyless.
+            Live video feeds published by NYSDOT. Events from USGS and the National
+            Weather Service. All sources are public and keyless. Still-image cameras
+            are deliberately excluded — every tile here is live video.
           </footer>
         </div>
       </body>

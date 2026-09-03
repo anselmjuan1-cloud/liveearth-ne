@@ -30,8 +30,7 @@ export default async function MapPage() {
         <span>
           <b>{events.length}</b> events
         </span>
-        <span style={{ color: "#5eead4" }}>teal = live video</span>
-        <span style={{ color: "#64748b" }}>grey = still image</span>
+        <span style={{ color: "#5eead4" }}>every camera is a live video feed</span>
       </div>
       <div style={{ height: 22 }} />
       <MapClient cameras={cameras} events={events} />

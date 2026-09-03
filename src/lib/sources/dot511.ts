@@ -15,11 +15,33 @@ export interface DotProvider {
   note?: string;
 }
 
+// This app is live video only -- no still images anywhere. Of the Northeast 511
+// systems, only NY publishes HLS stream URLs; the rest are refreshing JPEGs and
+// therefore have nothing to contribute. They stay listed so the reason is on the
+// record, and so they light up immediately if they ever start serving video.
 export const DOT_PROVIDERS: DotProvider[] = [
   { id: "511ny", host: "www.511ny.org", states: ["NY"], enabled: true },
-  { id: "511pa", host: "www.511pa.com", states: ["PA"], enabled: true },
-  { id: "newengland511", host: "newengland511.org", states: ["ME", "NH", "VT"], enabled: true },
-  { id: "ctroads", host: "ctroads.org", states: ["CT"], enabled: true },
+  {
+    id: "511pa",
+    host: "www.511pa.com",
+    states: ["PA"],
+    enabled: false,
+    note: "Still images only, no videoUrl on any record. Excluded: app is video-only."
+  },
+  {
+    id: "newengland511",
+    host: "newengland511.org",
+    states: ["ME", "NH", "VT"],
+    enabled: false,
+    note: "Still images only, no videoUrl on any record. Excluded: app is video-only."
+  },
+  {
+    id: "ctroads",
+    host: "ctroads.org",
+    states: ["CT"],
+    enabled: false,
+    note: "Still images only, and video auth required. Excluded: app is video-only."
+  },
   {
     id: "511nj",
     host: "511nj.org",
@@ -132,20 +154,16 @@ function toCamera(provider: DotProvider, raw: RawCamera, now: string): Camera | 
   const pos = parseWkt(wkt);
   if (!pos || !inNortheast(pos.lat, pos.lon)) return null;
 
+  // Live video only. Still-image sources are deliberately not collected, so a
+  // camera with no playable stream is not indexed at all rather than being
+  // indexed and filtered out later.
   const sources: CameraSource[] = [];
   for (const img of raw.images ?? []) {
     if (img.disabled || img.blocked) continue;
-    // HLS first: it is real live video, and these hosts send
-    // Access-Control-Allow-Origin: * so the browser plays it with no proxy hop.
-    if (img.videoUrl && !img.videoDisabled && !img.isVideoAuthRequired) {
-      sources.push({ kind: "hls", url: img.videoUrl, rank: 0 });
-    }
-    if (img.imageUrl) {
-      const url = img.imageUrl.startsWith("http")
-        ? img.imageUrl
-        : `https://${provider.host}${img.imageUrl}`;
-      sources.push({ kind: "image", url, rank: 1 });
-    }
+    if (!img.videoUrl || img.videoDisabled || img.isVideoAuthRequired) continue;
+    // These hosts send Access-Control-Allow-Origin: *, so the browser plays the
+    // stream directly with no proxy hop.
+    sources.push({ kind: "hls", url: img.videoUrl, rank: 0 });
   }
   if (sources.length === 0) return null;
 

@@ -137,7 +137,6 @@ nav.tabs a[data-active="true"] {
   background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
 }
 .pill.live { color: #34d399; }
-.pill.still { color: #93a4bb; }
 .pill.night { color: #7c8db0; }
 
 .tile.dead { opacity: 0.28; filter: grayscale(1); }
@@ -171,3 +170,10 @@ footer.note code { color: var(--text); background: var(--panel-2); padding: 1px 
 
 #map { height: 74vh; border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; }
 .leaflet-container { background: #0d1117 !important; }
+
+.fallback.loading {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  pointer-events: none;
+}

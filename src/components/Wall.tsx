@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import CameraTile from "./CameraTile";
 import type { ScoredCamera } from "@/lib/types";
 
-// Ambient mode. One live hero that rotates on a timer, with a wall of stills
+// Ambient mode. A live hero that rotates on a timer, with more live feeds
 // around it. Dead tiles are replaced from a standby pool rather than left blank.
 
 const ROTATE_MS = 45000;
-const WALL = 11;
+const WALL = 8;
 
 export default function Wall({ cameras }: { cameras: ScoredCamera[] }) {
   const [heroIndex, setHeroIndex] = useState(0);
@@ -53,7 +53,7 @@ export default function Wall({ cameras }: { cameras: ScoredCamera[] }) {
 
       {hero && (
         <div className="hero">
-          <CameraTile key={hero.id} camera={hero} live onDead={markDead} />
+          <CameraTile key={hero.id} camera={hero} priority onDead={markDead} />
           <div className="hero-side">
             {wall.slice(0, 2).map((c) => (
               <CameraTile key={c.id} camera={c} onDead={markDead} />
