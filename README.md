@@ -4,13 +4,16 @@ Live public cameras across the Northeast US, routed by what is actually
 happening there. When a severe thunderstorm warning goes up over western
 Pennsylvania, this shows you the cameras inside the warning polygon.
 
-**4,021 cameras** indexed across NY, PA, CT, VT, NH and ME — **1,561 with live
-HLS video**. Every data source is public and needs no API key.
+**1,561 cameras, every one a live HLS video stream.** No still images anywhere
+in the app. Every data source is public and needs no API key.
 
 Runs entirely on GitHub + Vercel Hobby. No database.
 
 ## How it works
 
+- **Live video only.** Still-image cameras are not indexed at all. Of the
+  Northeast 511 systems only NY publishes stream URLs, so coverage is New York
+  State (plus two PA cameras that happen to serve video).
 - **GitHub Actions is the worker fleet.** `discover` ingests state DOT camera
   feeds every 6 hours; `sweep` health-checks a prioritized slice of cameras
   every 10 minutes. Both commit JSON to an orphan `data` branch.
@@ -26,7 +29,7 @@ Runs entirely on GitHub + Vercel Hobby. No database.
 | Route | What it is |
 |---|---|
 | `/` | Event router — active weather alerts and earthquakes, each with the nearest live cameras |
-| `/wall` | Ambient mode — a rotating live hero plus a wall of stills, daylight-filtered |
+| `/wall` | Ambient mode — a rotating live hero plus more live feeds, daylight-filtered |
 | `/map` | All cameras and event polygons on one map |
 | `/api/events` | Routed events as JSON |
 | `/api/shelf?near=42.9,-78.8&limit=24` | Nearest cameras to a point |
@@ -42,6 +45,10 @@ npm run dev
 
 The repo ships with a 900-camera seed registry, so the app works immediately —
 before any Action has run.
+
+Because every tile decodes a real stream, `CameraTile` only creates a player for
+tiles actually on screen (IntersectionObserver) and caps concurrent decoders at
+8 with a wait queue.
 
 ## Deploying
 

@@ -81,7 +81,7 @@ zero demotions, which is correct.
 That last row is the failure mode status codes cannot see. Six identical
 signatures in a row demotes to DEGRADED.
 
-**Tiered cadence.** Probing 4,000 cameras every 10 minutes would hammer the DOT
+**Tiered cadence.** Probing every camera every 10 minutes would hammer the DOT
 hosts. `selectForSweep()` is a priority queue over `tierWeight + overdue` with a
 fixed budget (default 700/sweep):
 
@@ -128,26 +128,41 @@ Boston that brightens at 03:00 local is not in Boston.
 
 ## Embeds
 
-Only the hero decodes video. Nine simultaneous HLS players stall a browser;
-at thumbnail size a still refreshed every 15s is indistinguishable from live and
-costs almost nothing. The DOT hosts send `Access-Control-Allow-Origin: *` on HLS
-and permit hotlinked stills, so there is no proxy hop and no bandwidth on our
-side.
+The app is live video only, so the poster-wall trick that used to dodge the
+embed ceiling is gone and every tile decodes. Two defences in `CameraTile`:
+
+1. **Virtualization.** A player exists only while its tile is on screen
+   (IntersectionObserver, 200px margin) and is destroyed when it scrolls away.
+2. **A global budget.** At most 8 decoders run at once; tiles beyond that join
+   a wait queue and show a placeholder until a slot frees. Hero tiles take a
+   slot immediately.
+
+The DOT hosts send `Access-Control-Allow-Origin: *` on HLS, so streams play
+directly with no proxy hop and no bandwidth on our side.
+
+`spread()` in `router.ts` keeps one provider or state from filling every slot,
+with a per-bucket allowance that scales to how many buckets exist — a fixed cap
+would silently halve every result now that the pool is effectively one
+provider.
 
 ## Data sources
 
 All public, keyless, verified working.
 
-| Source | Cameras | Video | Notes |
-|---|---|---|---|
-| 511NY | 1,867 | HLS + stills | the only NE system serving live video |
-| 511PA | 1,401 | stills | |
-| New England 511 | 406 | stills | ME/NH/VT, state resolved per record |
-| CT Roads | 347 | stills | |
-| **Total** | **4,021** | 1,561 with HLS | |
+The app indexes live video only, so a source without stream URLs contributes
+nothing and is disabled rather than ingested and filtered downstream.
 
-Not yet wired: **NJ** and **MA** run a different platform whose endpoint has not
-been located. Adapters are stubbed and disabled in `DOT_PROVIDERS`.
+| Source | Indexed | Why |
+|---|---|---|
+| 511NY | 1,559 | the only NE system publishing `videoUrl` |
+| 511PA | 2 | disabled; two cameras with video survive from an earlier ingest |
+| New England 511 | 0 | disabled — still images only |
+| CT Roads | 0 | disabled — still images only, video auth required |
+| NJ / MA | 0 | different platform, endpoint not located |
+| **Total** | **1,561** | all HLS |
+
+`discover` prunes both still-image cameras and still-image sources on every run,
+so cameras predating the video-only rule do not survive in the registry.
 
 Events: USGS FDSN query API (bbox-filtered, ~2KB) and NWS active alerts with
 real polygons. A camera inside an alert polygon scores as distance zero.
@@ -163,6 +178,8 @@ real polygons. A camera inside an alert polygon scores as distance zero.
 - **Viewer reports are not persisted** without a KV store.
 - **No archive.** Frame capture over time — the genuinely defensible asset — is
   not built. It needs blob storage.
+- **Coverage is New York State**, a direct consequence of the video-only rule.
+  Roughly 2,460 still-image cameras across PA, CT, VT, NH and ME are excluded.
 
 ## Upgrade path
 

@@ -9,6 +9,40 @@ import { isNight } from "./solar";
 
 const MAX_KM = 120;
 
+/**
+ * Take `limit` items while avoiding over-concentration in any one bucket.
+ * The per-bucket allowance scales with how many buckets exist, so a pool with
+ * a single provider or state is not throttled by a rule meant for a diverse
+ * one. A second pass fills any remaining slots so the caller always gets as
+ * many items as the pool can supply.
+ */
+function spread<T>(items: T[], limit: number, key: (item: T) => string): T[] {
+  const buckets = new Set(items.map(key)).size || 1;
+  const allowance = Math.ceil(limit / Math.min(buckets, 4));
+
+  const picked: T[] = [];
+  const used = new Map<string, number>();
+  const overflow: T[] = [];
+
+  for (const item of items) {
+    if (picked.length >= limit) break;
+    const k = key(item);
+    const n = used.get(k) ?? 0;
+    if (n >= allowance) {
+      overflow.push(item);
+      continue;
+    }
+    used.set(k, n + 1);
+    picked.push(item);
+  }
+
+  for (const item of overflow) {
+    if (picked.length >= limit) break;
+    picked.push(item);
+  }
+  return picked;
+}
+
 export function scoreCamera(
   camera: LiveCamera,
   event: WorldEvent,
@@ -48,16 +82,10 @@ export function routeEvent(
   scored.sort((a, b) => b.score - a.score);
 
   // Spread picks across providers so one dense metro does not fill every slot.
-  const picked: ScoredCamera[] = [];
-  const perProvider = new Map<string, number>();
-  for (const cam of scored) {
-    const n = perProvider.get(cam.provider) ?? 0;
-    if (n >= Math.ceil(limit / 2) && picked.length < limit) continue;
-    perProvider.set(cam.provider, n + 1);
-    picked.push(cam);
-    if (picked.length >= limit) break;
-  }
-
+  // The cap has to adapt to how many providers actually exist: now that the app
+  // is video-only and effectively single-provider, a fixed limit/2 cap would
+  // silently halve every result.
+  const picked = spread(scored, limit, (c) => c.provider);
   return { ...event, cameras: picked };
 }
 
@@ -103,14 +131,5 @@ export function ambientPicks(cameras: LiveCamera[], count = 9, now = new Date())
     score: 0
   }));
 
-  const out: ScoredCamera[] = [];
-  const seenState = new Map<string, number>();
-  for (const cam of source) {
-    const n = seenState.get(cam.state) ?? 0;
-    if (n >= Math.ceil(count / 2)) continue;
-    seenState.set(cam.state, n + 1);
-    out.push(cam);
-    if (out.length >= count) break;
-  }
-  return out;
+  return spread(source, count, (c) => c.state);
 }
