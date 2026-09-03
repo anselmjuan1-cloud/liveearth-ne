@@ -21,9 +21,20 @@ async function main() {
   }
 
   const prior = readState<HealthFile>("health.json");
-  const health: Record<string, Health> = { ...(prior?.health ?? {}) };
   const sweep = (prior?.sweep ?? 0) + 1;
   const now = new Date();
+
+  // Health is keyed by camera id and would otherwise accumulate entries for
+  // cameras that have left the registry, inflating the reported state counts.
+  // The registry is the authority on what exists.
+  const ids = new Set(registry.cameras.map((c) => c.id));
+  const health: Record<string, Health> = {};
+  let orphaned = 0;
+  for (const [id, h] of Object.entries(prior?.health ?? {})) {
+    if (ids.has(id)) health[id] = h;
+    else orphaned++;
+  }
+  if (orphaned > 0) console.log(`dropped ${orphaned} health entries not in the registry`);
 
   const batch = selectForSweep(registry.cameras, health, sweep, BUDGET);
   console.log(`sweep #${sweep}: probing ${batch.length} of ${registry.cameras.length}`);
